@@ -8,11 +8,11 @@ use AmoCRM\Filters\TasksFilter;
 use AmoCRM\Helpers\EntityTypesInterface;
 use AmoCRM\Models\TaskModel;
 
-final class AmoCRMTasks extends AmoCRMAbstract
+final readonly class AmoCRMTasks extends AmoCRMAbstract
 {
     public function massCopyLeadsTasks(MassCopyLeadsMap $massCopyLeadsMap): void
     {
-        $tasksService = $this->getApiClient()->tasks();
+        $tasksService = $this->amoCRMApiClient->tasks();
 
         $tasksFilter = new TasksFilter();
         $tasksFilter->setEntityType(EntityTypesInterface::LEAD);

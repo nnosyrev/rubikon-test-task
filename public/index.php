@@ -40,8 +40,11 @@ switch ($routeInfo[0]) {
         $controllerClass = $handler[0];
         $controllerMethod = $handler[1];
 
+        $containerConfig = require_once __DIR__ . '/../config/container.php';
+        $container = new DI\Container($containerConfig);
+
         try {
-            $controller = new $controllerClass();
+            $controller = $container->get($controllerClass);
             $response = $controller->$controllerMethod($vars);
         } catch (\Throwable $e) {
             $response = new Response(

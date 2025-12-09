@@ -13,15 +13,11 @@ final readonly class LeadController
 {
     use ApiResponseTrait;
 
-    private AmoCRMLeads $amoCRMLeads;
-    private AmoCRMTasks $amoCRMTasks;
-    private AmoCRMCommonNotes $amoCRMCommonNotes;
-
-    public function __construct()
-    {
-        $this->amoCRMLeads = new AmoCRMLeads();
-        $this->amoCRMTasks = new AmoCRMTasks();
-        $this->amoCRMCommonNotes = new AmoCRMCommonNotes();
+    public function __construct(
+        private AmoCRMLeads $amoCRMLeads,
+        private AmoCRMTasks $amoCRMTasks,
+        private AmoCRMCommonNotes $amoCRMCommonNotes,
+    ) {
     }
 
     public function changeStatusToWaitingAction(): Response

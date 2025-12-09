@@ -8,11 +8,11 @@ use AmoCRM\Filters\NotesFilter;
 use AmoCRM\Helpers\EntityTypesInterface;
 use AmoCRM\Models\NoteType\CommonNote;
 
-final class AmoCRMCommonNotes extends AmoCRMAbstract
+final readonly class AmoCRMCommonNotes extends AmoCRMAbstract
 {
     public function massCopyLeadsCommonNotes(MassCopyLeadsMap $massCopyLeadsMap): void
     {
-        $notesService = $this->getApiClient()->notes(EntityTypesInterface::LEADS);
+        $notesService = $this->amoCRMApiClient->notes(EntityTypesInterface::LEADS);
 
         $notesFilter = new NotesFilter();
         $notesFilter->setEntityIds($massCopyLeadsMap->getOriginIds());

@@ -9,14 +9,14 @@ use AmoCRM\Filters\LeadsFilter;
 use AmoCRM\Models\LeadModel;
 use App\Config\Config;
 
-final class AmoCRMLeads extends AmoCRMAbstract
+final readonly class AmoCRMLeads extends AmoCRMAbstract
 {
     private const CHANGE_STATUS_TO_WAITING_PRICE_FROM = 5001;
     private const DUPLICATE_PRICE = 4999;
 
     public function findInRequestStatus(): LeadsCollection
     {
-        $leadsService = $this->getApiClient()->leads();
+        $leadsService = $this->amoCRMApiClient->leads();
 
         $filter = new LeadsFilter();
         $filter->setStatuses([[
@@ -35,7 +35,7 @@ final class AmoCRMLeads extends AmoCRMAbstract
 
     public function changeStatusTo(LeadsCollection $leadsCollection, int $statusId): void
     {
-        $leadsService = $this->getApiClient()->leads();
+        $leadsService = $this->amoCRMApiClient->leads();
 
         foreach ($leadsCollection as $lead) {
             $lead->setStatusId($statusId);
@@ -46,7 +46,7 @@ final class AmoCRMLeads extends AmoCRMAbstract
 
     public function findInClientConfirmedStatus(): LeadsCollection
     {
-        $leadsService = $this->getApiClient()->leads();
+        $leadsService = $this->amoCRMApiClient->leads();
 
         $filter = new LeadsFilter();
         $filter->setStatuses([[
@@ -72,7 +72,7 @@ final class AmoCRMLeads extends AmoCRMAbstract
 
     public function massCopyToStatus(LeadsCollection $leadsCollection, int $statusId): MassCopyLeadsMap
     {
-        $leadsService = $this->getApiClient()->leads();
+        $leadsService = $this->amoCRMApiClient->leads();
 
         $newLeadsCollection = new LeadsCollection();
 
