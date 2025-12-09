@@ -15,7 +15,7 @@ final readonly class LeadController
     use ApiResponseTrait;
 
     private const CHANGE_STATUS_TO_WAITING_PRICE_FROM = 5001;
-    private const DUPLICATION_PRICE = 4999;
+    private const COPY_TO_WAITING_STATUS_PRICE = 4999;
 
     public function __construct(
         private AmoCRMLeads $amoCRMLeads,
@@ -37,9 +37,9 @@ final readonly class LeadController
         return $this->apiResponse(new LeadsNotFoundApiResponse());
     }
 
-    public function duplicationAction(): Response
+    public function copyToWaitingStatusAction(): Response
     {
-        $leads = $this->amoCRMLeads->findInClientConfirmedStatusWithPrice(self::DUPLICATION_PRICE);
+        $leads = $this->amoCRMLeads->findInClientConfirmedStatusWithPrice(self::COPY_TO_WAITING_STATUS_PRICE);
 
         if (!$leads->isEmpty()) {
             $massCopyLeadsMap = $this->amoCRMLeads->massCopyToStatus($leads, Config::get('AMOCRM_CLIENT_WAITING_STATUS_ID'));
