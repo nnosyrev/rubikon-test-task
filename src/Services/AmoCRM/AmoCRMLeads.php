@@ -3,6 +3,7 @@
 namespace App\Services\AmoCRM;
 
 use AmoCRM\Collections\Leads\LeadsCollection;
+use AmoCRM\Exceptions\AmoCRMApiNoContentException;
 use AmoCRM\Filters\BaseRangeFilter;
 use AmoCRM\Filters\LeadsFilter;
 use AmoCRM\Models\LeadModel;
@@ -25,7 +26,11 @@ final class AmoCRMLeads extends AmoCRMAbstract
         $filter->setPrice((new BaseRangeFilter)->setFrom(self::CHANGE_STATUS_TO_WAITING_PRICE_FROM)->setTo(PHP_INT_MAX));
         $filter->setLimit(Config::get('AMOCRM_LEADS_LIMIT'));
 
-        return $leadsService->get($filter);
+        try {
+            return $leadsService->get($filter);
+        } catch (AmoCRMApiNoContentException $e) {
+            return new LeadsCollection();
+        }
     }
 
     public function changeStatusTo(LeadsCollection $leadsCollection, int $statusId): void
@@ -51,14 +56,18 @@ final class AmoCRMLeads extends AmoCRMAbstract
         $filter->setPrice(self::DUPLICATE_PRICE);
         $filter->setLimit(Config::get('AMOCRM_LEADS_LIMIT'));
 
-        return $leadsService->get($filter, [
-            LeadModel::CATALOG_ELEMENTS,
-            LeadModel::IS_PRICE_BY_ROBOT,
-            LeadModel::LOSS_REASON,
-            LeadModel::SOURCE_ID,
-            LeadModel::CONTACTS,
-            LeadModel::SOURCE,
-        ]);
+        try {
+            return $leadsService->get($filter, [
+                LeadModel::CATALOG_ELEMENTS,
+                LeadModel::IS_PRICE_BY_ROBOT,
+                LeadModel::LOSS_REASON,
+                LeadModel::SOURCE_ID,
+                LeadModel::CONTACTS,
+                LeadModel::SOURCE,
+            ]);
+        } catch (AmoCRMApiNoContentException $e) {
+            return new LeadsCollection();
+        }
     }
 
     public function massCopyToStatus(LeadsCollection $leadsCollection, int $statusId): MassCopyLeadsMap

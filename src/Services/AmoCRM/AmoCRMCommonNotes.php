@@ -21,20 +21,18 @@ final class AmoCRMCommonNotes extends AmoCRMAbstract
             $notesCollection = $notesService->get($notesFilter);
         } catch (AmoCRMApiNoContentException $e) {
             // Не нашли примечаний
-            $notesCollection = new NotesCollection();
+            return;
         }
 
-        if (!$notesCollection->isEmpty()) {
-            $newNotesCollection = new NotesCollection;
-            foreach ($notesCollection as $note) {
-                $newNote = $this->cloneCommonNote($note);
-                $newNote->setEntityId($massCopyLeadsMap->getCopyByOriginId($note->getEntityId())->getId());
+        $newNotesCollection = new NotesCollection;
+        foreach ($notesCollection as $note) {
+            $newNote = $this->cloneCommonNote($note);
+            $newNote->setEntityId($massCopyLeadsMap->getCopyByOriginId($note->getEntityId())->getId());
 
-                $newNotesCollection->add($newNote);
-            }
-
-            $notesService->add($newNotesCollection);
+            $newNotesCollection->add($newNote);
         }
+
+        $notesService->add($newNotesCollection);
     }
 
     private function cloneCommonNote(CommonNote $note): CommonNote

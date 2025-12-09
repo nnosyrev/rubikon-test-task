@@ -2,7 +2,6 @@
 
 namespace App\Controllers;
 
-use AmoCRM\Exceptions\AmoCRMApiNoContentException;
 use App\Config\Config;
 use App\Services\AmoCRM\AmoCRMCommonNotes;
 use App\Services\AmoCRM\AmoCRMLeads;
@@ -14,34 +13,31 @@ final readonly class LeadController
 {
     public function changeStatusToWaitingAction(): Response
     {
-        try {
-            $amoCRMLeads = new AmoCRMLeads();
+        $amoCRMLeads = new AmoCRMLeads();
 
-            $leads = $amoCRMLeads->findInRequestStatus();
+        $leads = $amoCRMLeads->findInRequestStatus();
+
+        if (!$leads->isEmpty()) {
             $amoCRMLeads->changeStatusTo($leads, Config::get('AMOCRM_CLIENT_WAITING_STATUS_ID'));
-
-            return new JsonResponse(['data' => 'ok']);
-        } catch (AmoCRMApiNoContentException $e) {
-            return new JsonResponse(['data' => 'leads not found']);
         }
+
+        return new JsonResponse(['data' => 'ok ' . $leads->count()]);
     }
 
     public function duplicationAction(): Response
     {
-        try {
-            $amoCRMLeads = new AmoCRMLeads;
-            $amoCRMTasks = new AmoCRMTasks;
-            $amoCRMCommonNotes = new AmoCRMCommonNotes;
+        $amoCRMLeads = new AmoCRMLeads;
+        $amoCRMTasks = new AmoCRMTasks;
+        $amoCRMCommonNotes = new AmoCRMCommonNotes;
 
-            $leads = $amoCRMLeads->findInClientConfirmedStatus();
+        $leads = $amoCRMLeads->findInClientConfirmedStatus();
 
+        if (!$leads->isEmpty()) {
             $massCopyLeadsMap = $amoCRMLeads->massCopyToStatus($leads, Config::get('AMOCRM_CLIENT_WAITING_STATUS_ID'));
             $amoCRMTasks->massCopyLeadsTasks($massCopyLeadsMap);
             $amoCRMCommonNotes->massCopyLeadsCommonNotes($massCopyLeadsMap);
-
-            return new JsonResponse(['data' => 'ok']);
-        } catch (AmoCRMApiNoContentException $e) {
-            return new JsonResponse(['data' => 'leads not found']);
         }
+
+        return new JsonResponse(['data' => 'ok ' . $leads->count()]);
     }
 }

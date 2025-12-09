@@ -22,20 +22,18 @@ final class AmoCRMTasks extends AmoCRMAbstract
             $tasksCollection = $tasksService->get($tasksFilter);
         } catch (AmoCRMApiNoContentException $e) {
             // Не нашли задач
-            $tasksCollection = new TasksCollection();
+            return;
         }
 
-        if (!$tasksCollection->isEmpty()) {
-            $newTasksCollection = new TasksCollection();
-            foreach ($tasksCollection as $task) {
-                $newTask = $this->cloneTask($task);
-                $newTask->setEntityId($massCopyLeadsMap->getCopyByOriginId($task->getEntityId())->getId());
+        $newTasksCollection = new TasksCollection();
+        foreach ($tasksCollection as $task) {
+            $newTask = $this->cloneTask($task);
+            $newTask->setEntityId($massCopyLeadsMap->getCopyByOriginId($task->getEntityId())->getId());
 
-                $newTasksCollection->add($newTask);
-            }
-
-            $tasksService->add($newTasksCollection);
+            $newTasksCollection->add($newTask);
         }
+
+        $tasksService->add($newTasksCollection);
     }
 
     private function cloneTask(TaskModel $task): TaskModel
