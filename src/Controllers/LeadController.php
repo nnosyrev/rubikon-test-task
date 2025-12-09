@@ -23,6 +23,13 @@ final readonly class LeadController
 
     public function duplicationAction(): Response
     {
-        return new JsonResponse(['data' => 999]);
+        try {
+            $amoCRMLeads = new AmoCRMLeads();
+            $amoCRMLeads->duplicate();
+
+            return new JsonResponse(['data' => 'ok']);
+        } catch (AmoCRMApiNoContentException $e) {
+            return new JsonResponse(['data' => 'leads not found']);
+        }
     }
 }
