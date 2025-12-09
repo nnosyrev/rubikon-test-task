@@ -16,12 +16,12 @@ final class MassCopyLeadsMap
 
     public function getOriginIds(): array
     {
-        return array_keys($this->map);
+        return \array_keys($this->map);
     }
 
     public function getCopyByOriginId(int $id): LeadModel
     {
-        if (!array_key_exists($id, $this->map)) {
+        if (!\array_key_exists($id, $this->map)) {
             throw new Exception('Something went wrong.');
         }
 
