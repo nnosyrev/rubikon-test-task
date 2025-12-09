@@ -11,10 +11,7 @@ use App\Config\Config;
 
 final readonly class AmoCRMLeads extends AmoCRMAbstract
 {
-    private const CHANGE_STATUS_TO_WAITING_PRICE_FROM = 5001;
-    private const DUPLICATE_PRICE = 4999;
-
-    public function findInRequestStatus(): LeadsCollection
+    public function findInRequestStatusWithPriceFrom(int $priceFrom): LeadsCollection
     {
         $leadsService = $this->amoCRMApiClient->leads();
 
@@ -23,7 +20,7 @@ final readonly class AmoCRMLeads extends AmoCRMAbstract
             'status_id' => Config::get('AMOCRM_REQUEST_STATUS_ID'),
             'pipeline_id' => Config::get('AMOCRM_PIPELINE_ID')
         ]]);
-        $filter->setPrice((new BaseRangeFilter)->setFrom(self::CHANGE_STATUS_TO_WAITING_PRICE_FROM)->setTo(PHP_INT_MAX));
+        $filter->setPrice((new BaseRangeFilter)->setFrom($priceFrom)->setTo(PHP_INT_MAX));
         $filter->setLimit(Config::get('AMOCRM_LEADS_LIMIT'));
 
         try {
@@ -44,7 +41,7 @@ final readonly class AmoCRMLeads extends AmoCRMAbstract
         $leadsService->update($leadsCollection);
     }
 
-    public function findInClientConfirmedStatus(): LeadsCollection
+    public function findInClientConfirmedStatusWithPrice(int $price): LeadsCollection
     {
         $leadsService = $this->amoCRMApiClient->leads();
 
@@ -53,7 +50,7 @@ final readonly class AmoCRMLeads extends AmoCRMAbstract
             'status_id' => Config::get('AMOCRM_CLIENT_CONFIRMED_STATUS_ID'),
             'pipeline_id' => Config::get('AMOCRM_PIPELINE_ID')
         ]]);
-        $filter->setPrice(self::DUPLICATE_PRICE);
+        $filter->setPrice($price);
         $filter->setLimit(Config::get('AMOCRM_LEADS_LIMIT'));
 
         try {
