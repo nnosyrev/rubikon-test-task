@@ -22,7 +22,7 @@ final class Config
         return self::$config[$key] ?? $default;
     }
     
-    private static function defineConstant(string $key)
+    public static function defineConstant(string $key)
     {
         if (!defined($key) && isset(self::$config[$key])) {
             define($key, self::$config[$key]);
