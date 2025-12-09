@@ -3,17 +3,9 @@
 namespace App\Services\AmoCRM;
 
 use AmoCRM\Collections\Leads\LeadsCollection;
-use AmoCRM\Collections\NotesCollection;
-use AmoCRM\Collections\TasksCollection;
-use AmoCRM\Exceptions\AmoCRMApiNoContentException;
 use AmoCRM\Filters\BaseRangeFilter;
 use AmoCRM\Filters\LeadsFilter;
-use AmoCRM\Filters\NotesFilter;
-use AmoCRM\Filters\TasksFilter;
-use AmoCRM\Helpers\EntityTypesInterface;
 use AmoCRM\Models\LeadModel;
-use AmoCRM\Models\NoteType\CommonNote;
-use AmoCRM\Models\TaskModel;
 use App\Config\Config;
 
 final class AmoCRMLeads extends AmoCRMAbstract
@@ -21,7 +13,7 @@ final class AmoCRMLeads extends AmoCRMAbstract
     private const CHANGE_STATUS_TO_WAITING_PRICE_FROM = 5001;
     private const DUPLICATE_PRICE = 4999;
 
-    public function changeStatusToWaiting(): void
+    public function findInRequestStatus(): LeadsCollection
     {
         $leadsService = $this->getApiClient()->leads();
 
@@ -33,20 +25,24 @@ final class AmoCRMLeads extends AmoCRMAbstract
         $filter->setPrice((new BaseRangeFilter)->setFrom(self::CHANGE_STATUS_TO_WAITING_PRICE_FROM)->setTo(PHP_INT_MAX));
         $filter->setLimit(Config::get('AMOCRM_LEADS_LIMIT'));
 
-        $leadsCollection = $leadsService->get($filter);
+        return $leadsService->get($filter);
+    }
+
+    public function changeStatusTo(LeadsCollection $leadsCollection, int $statusId): void
+    {
+        $leadsService = $this->getApiClient()->leads();
 
         foreach ($leadsCollection as $lead) {
-            $lead->setStatusId(Config::get('AMOCRM_CLIENT_WAITING_STATUS_ID'));
+            $lead->setStatusId($statusId);
         }
 
         $leadsService->update($leadsCollection);
     }
 
-    public function duplicate(): void
+    public function findInClientConfirmedStatus(): LeadsCollection
     {
         $leadsService = $this->getApiClient()->leads();
 
-        // Leads
         $filter = new LeadsFilter();
         $filter->setStatuses([[
             'status_id' => Config::get('AMOCRM_CLIENT_CONFIRMED_STATUS_ID'),
@@ -55,7 +51,7 @@ final class AmoCRMLeads extends AmoCRMAbstract
         $filter->setPrice(self::DUPLICATE_PRICE);
         $filter->setLimit(Config::get('AMOCRM_LEADS_LIMIT'));
 
-        $leadsCollection = $leadsService->get($filter, [
+        return $leadsService->get($filter, [
             LeadModel::CATALOG_ELEMENTS,
             LeadModel::IS_PRICE_BY_ROBOT,
             LeadModel::LOSS_REASON,
@@ -63,72 +59,28 @@ final class AmoCRMLeads extends AmoCRMAbstract
             LeadModel::CONTACTS,
             LeadModel::SOURCE,
         ]);
+    }
+
+    public function massCopyToStatus(LeadsCollection $leadsCollection, int $statusId): MassCopyLeadsMap
+    {
+        $leadsService = $this->getApiClient()->leads();
 
         $newLeadsCollection = new LeadsCollection();
 
-        $leadsIds = [];
-        $newLeads = [];
+        $massCopyLeadsMap = new MassCopyLeadsMap();
+
         foreach ($leadsCollection as $lead) {
             $newLead = $this->cloneLead($lead);
+            $newLead->setStatusId($statusId);
 
             $newLeadsCollection->add($newLead);
 
-            $leadsIds[] = $lead->id;
-            $newLeads[$lead->getId()] = $newLead;
+            $massCopyLeadsMap->addPair($lead, $newLead);
         }
 
         $leadsService->add($newLeadsCollection);
 
-        // Tasks
-        $tasksService = $this->getApiClient()->tasks();
-
-        $tasksFilter = new TasksFilter();
-        $tasksFilter->setEntityType(EntityTypesInterface::LEAD);
-        $tasksFilter->setEntityIds($leadsIds);
-
-        try {
-            $tasksCollection = $tasksService->get($tasksFilter);
-        } catch (AmoCRMApiNoContentException $e) {
-            // Не нашли задач
-            $tasksCollection = new TasksCollection();
-        }
-
-        if (!$tasksCollection->isEmpty()) {
-            $newTasksCollection = new TasksCollection();
-            foreach ($tasksCollection as $task) {
-                $newTask = $this->cloneTask($task);
-                $newTask->setEntityId($newLeads[$task->getEntityId()]->getId());
-
-                $newTasksCollection->add($newTask);
-            }
-
-            $tasksService->add($newTasksCollection);
-        }
-
-        // Notes
-        $notesService = $this->getApiClient()->notes(EntityTypesInterface::LEADS);
-
-        $notesFilter = new NotesFilter();
-        $notesFilter->setEntityIds($leadsIds);
-
-        try {
-            $notesCollection = $notesService->get($notesFilter);
-        } catch (AmoCRMApiNoContentException $e) {
-            // Не нашли примечаний
-            $notesCollection = new NotesCollection();
-        }
-
-        if (!$notesCollection->isEmpty()) {
-            $newNotesCollection = new NotesCollection;
-            foreach ($notesCollection as $note) {
-                $newNote = $this->cloneCommonNote($note);
-                $newNote->setEntityId($newLeads[$task->getEntityId()]->getId());
-
-                $newNotesCollection->add($newNote);
-            }
-
-            $notesService->add($newNotesCollection);
-        }
+        return $massCopyLeadsMap;
     }
 
     private function cloneLead(LeadModel $lead): LeadModel
@@ -142,7 +94,7 @@ final class AmoCRMLeads extends AmoCRMAbstract
             ->setCreatedBy($lead->getCreatedBy())
             ->setUpdatedBy($lead->getUpdatedBy())
             ->setPipelineId($lead->getPipelineId())
-            ->setStatusId(Config::get('AMOCRM_CLIENT_WAITING_STATUS_ID'))
+            ->setStatusId($lead->getStatusId())
             ->setClosedAt($lead->getClosedAt())
             ->setClosestTaskAt($lead->getClosestTaskAt())
             ->setLossReasonId($lead->getLossReasonId())
@@ -155,37 +107,5 @@ final class AmoCRMLeads extends AmoCRMAbstract
             ->setCustomFieldsValues($lead->getCustomFieldsValues())
             ->setContacts($lead->getContacts())
             ->setScore($lead->getScore());
-    }
-
-    private function cloneTask(TaskModel $task): TaskModel
-    {
-        return new TaskModel()
-            ->setResponsibleUserId($task->getResponsibleUserId())
-            ->setGroupId($task->getGroupId())
-            ->setCreatedBy($task->getCreatedBy())
-            ->setUpdatedBy($task->getUpdatedBy())
-            ->setAccountId($task->getAccountId())
-            ->setDuration($task->getDuration())
-            ->setEntityId($task->getEntityId())
-            ->setEntityType($task->getEntityType())
-            ->setIsCompleted($task->getIsCompleted())
-            ->setTaskTypeId($task->getTaskTypeId())
-            ->setText($task->getText())
-            ->setResult($task->getResult())
-            ->setCompleteTill($task->getCompleteTill())
-            ->setCompleteTill($task->getCompleteTill());
-    }
-
-    private function cloneCommonNote(CommonNote $note): CommonNote
-    {
-        return new CommonNote()
-            ->setText($note->getText())
-            ->setEntityId($note->getEntityId())
-            ->setResponsibleUserId($note->getResponsibleUserId())
-            ->setGroupId($note->getGroupId())
-            ->setCreatedBy($note->getCreatedBy())
-            ->setUpdatedBy($note->getUpdatedBy())
-            ->setAccountId($note->getAccountId())
-            ->setIsNeedToTriggerDigitalPipeline($note->getIsNeedToTriggerDigitalPipeline());
     }
 }
