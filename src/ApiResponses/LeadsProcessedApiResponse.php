@@ -5,7 +5,7 @@ namespace App\ApiResponses;
 use AmoCRM\Collections\Leads\LeadsCollection;
 use Symfony\Component\HttpFoundation\Response;
 
-final readonly class SuccessApiResponse implements ApiResponseInterface
+final readonly class LeadsProcessedApiResponse implements ApiResponseInterface
 {
     public function __construct(
         private LeadsCollection $leads
