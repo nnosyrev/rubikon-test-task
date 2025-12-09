@@ -3,6 +3,6 @@
 use App\Controllers\LeadController;
 
 return function(FastRoute\RouteCollector $r) {
-    $r->addRoute('GET', '/leads/change-status-to-waiting', [LeadController::class, 'changeStatusToWaitingAction']);
-    $r->addRoute('GET', '/leads/copy-to-waiting-status', [LeadController::class, 'copyToWaitingStatusAction']);
+    $r->addRoute('POST', '/leads/change-status-to-waiting', [LeadController::class, 'changeStatusToWaitingAction']);
+    $r->addRoute('POST', '/leads/copy-to-waiting-status', [LeadController::class, 'copyToWaitingStatusAction']);
 };
