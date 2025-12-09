@@ -4,12 +4,12 @@ use App\Config\Config;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-require_once __DIR__ . '/vendor/autoload.php';
+require_once __DIR__ . '/../vendor/autoload.php';
 
 // Загружаем конфиг при подключении
 Config::load();
 
-$routes = require_once __DIR__ . '/routes/routes.php';
+$routes = require_once __DIR__ . '/../routes/routes.php';
 $dispatcher = FastRoute\simpleDispatcher($routes);
 
 $request = Request::createFromGlobals();
