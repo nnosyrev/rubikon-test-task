@@ -5,6 +5,7 @@ namespace App\Services\AmoCRM;
 use AmoCRM\Collections\Leads\LeadsCollection;
 use AmoCRM\Collections\NotesCollection;
 use AmoCRM\Collections\TasksCollection;
+use AmoCRM\Exceptions\AmoCRMApiNoContentException;
 use AmoCRM\Filters\BaseRangeFilter;
 use AmoCRM\Filters\LeadsFilter;
 use AmoCRM\Filters\NotesFilter;
@@ -85,17 +86,24 @@ final class AmoCRMLeads extends AmoCRMAbstract
         $tasksFilter->setEntityType(EntityTypesInterface::LEAD);
         $tasksFilter->setEntityIds($leadsIds);
 
-        $tasksCollection = $tasksService->get($tasksFilter);
-
-        $newTasksCollection = new TasksCollection();
-        foreach ($tasksCollection as $task) {
-            $newTask = $this->cloneTask($task);
-            $newTask->setEntityId($newLeads[$task->getEntityId()]->getId());
-
-            $newTasksCollection->add($newTask);
+        try {
+            $tasksCollection = $tasksService->get($tasksFilter);
+        } catch (AmoCRMApiNoContentException $e) {
+            // Не нашли задач
+            $tasksCollection = new TasksCollection();
         }
 
-        $tasksService->add($newTasksCollection);
+        if (!$tasksCollection->isEmpty()) {
+            $newTasksCollection = new TasksCollection();
+            foreach ($tasksCollection as $task) {
+                $newTask = $this->cloneTask($task);
+                $newTask->setEntityId($newLeads[$task->getEntityId()]->getId());
+
+                $newTasksCollection->add($newTask);
+            }
+
+            $tasksService->add($newTasksCollection);
+        }
 
         // Notes
         $notesService = $this->getApiClient()->notes(EntityTypesInterface::LEADS);
@@ -103,17 +111,24 @@ final class AmoCRMLeads extends AmoCRMAbstract
         $notesFilter = new NotesFilter();
         $notesFilter->setEntityIds($leadsIds);
 
-        $notesCollection = $notesService->get($notesFilter);
-
-        $newNotesCollection = new NotesCollection;
-        foreach ($notesCollection as $note) {
-            $newNote = $this->cloneCommonNote($note);
-            $newNote->setEntityId($newLeads[$task->getEntityId()]->getId());
-
-            $newNotesCollection->add($newNote);
+        try {
+            $notesCollection = $notesService->get($notesFilter);
+        } catch (AmoCRMApiNoContentException $e) {
+            // Не нашли примечаний
+            $notesCollection = new NotesCollection();
         }
 
-        $notesService->add($newNotesCollection);
+        if (!$notesCollection->isEmpty()) {
+            $newNotesCollection = new NotesCollection;
+            foreach ($notesCollection as $note) {
+                $newNote = $this->cloneCommonNote($note);
+                $newNote->setEntityId($newLeads[$task->getEntityId()]->getId());
+
+                $newNotesCollection->add($newNote);
+            }
+
+            $notesService->add($newNotesCollection);
+        }
     }
 
     private function cloneLead(LeadModel $lead): LeadModel
